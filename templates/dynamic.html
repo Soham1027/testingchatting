@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+    <div id="usernameSection">
+      <h1>WebSocket Chat</h1>
+      <hr />
+      <form onsubmit="submitUsername(event)">
+        <label for="username"><b>Username:</b></label>
+        <input type="text" id="usernameInput" autocomplete="off" required />
+        <br />
+        <br />
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+
+    <div id="messagesSection" style="display: none">
+      <h1>WebSocket Chat</h1>
+
+      <hr />
+      <p><b>Username:</b> <span id="displayUsername"></span></p>
+      <hr />
+      <form action="" onsubmit="sendMessage(event)">
+        <label><b>Messages:</b></label>
+        <input type="text" id="messageText" autocomplete="off" required />
+        <br />
+        <br />
+        <label for="file"><b>Upload file:</b></label>
+        <input
+          type="file"
+          id="file"
+          enctype="multipart/form-data"
+          autocomplete="off"
+        />
+        <img
+          id="uploadImage"
+          style="display: none; max-width: 100px; max-height: 300px"
+          <br
+        />
+        <br />
+        <button type="submit">Send</button>
+      </form>
+      <hr />
+      <ul id="messages"></ul>
+    </div>
+
+    <script>
+      var username = "";
+      var ws;
+
+      function submitUsername(event) {
+        event.preventDefault();
+        username = document.getElementById("usernameInput").value;
+
+        ws = new WebSocket(`ws://localhost:8000/ws/${username}`);
+        ws.onmessage = function (event) {
+          var messages = document.getElementById("messages");
+          var message = document.createElement("li");
+          var content = document.createTextNode(event.data);
+          message.appendChild(content);
+          messages.appendChild(message);
+        };
+        document.getElementById("displayUsername").innerText = username;
+        document.getElementById("usernameSection").style.display = "none";
+        document.getElementById("messagesSection").style.display = "block";
+      }
+
+      function sendMessage(event) {
+        event.preventDefault();
+        var input = document.getElementById("messageText");
+        var fileInput = document.getElementById("file");
+        var uploadedImage = document.getElementById("uploadedImage");
+
+        if (fileInput.files.length > 0) {
+          var file = fileInput.files[0];
+          var reader = new FileReader();
+
+          reader.onload = function (e) {
+            var imageData = e.target.result;
+            uploadedImage.src = imageData;
+            uploadedImage.style.display = "block";
+
+            // Send the image data via WebSocket
+            ws.send(
+              JSON.stringify({
+                username: username,
+                message: input.value,
+                imageData: imageData,
+              })
+            );
+          };
+
+          reader.readAsDataURL(file);
+        } else {
+          // If no file is selected, send only the text message
+          ws.send(`${username}: ${input.value}`);
+        }
+
+        input.value = "";
+      }
+    </script>
+  </body>
+</html>
